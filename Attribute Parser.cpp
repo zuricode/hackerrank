@@ -92,12 +92,12 @@ void updateTag(const string& LINE, string& active_tag) {
 
         if (start_index != string::npos) {
 
-           end_index = active_tag.size();
+            end_index = active_tag.size();
 
-           while (start_index < end_index) {
-               active_tag.pop_back();
-               start_index++;
-           }
+            while (start_index < end_index) {
+                active_tag.pop_back();
+                start_index++;
+            }
 
         }
         else {
@@ -106,7 +106,7 @@ void updateTag(const string& LINE, string& active_tag) {
 
     }
 
- }
+}
 
 void removeBrackets(string& s) {
 
@@ -139,7 +139,7 @@ void inputKeysAndValues(const vector<string>& V, map<string, string>& m) {
         //Form correct tag section
         updateTag(V[i], active_tag);
 
-        if (active_tag.size() > 0) {        
+        if (active_tag.size() > 0) {
 
             //Try to find " " for first attribute
             start_index = V[i].find(" ");
