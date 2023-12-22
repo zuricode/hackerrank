@@ -3,205 +3,212 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <string>
 #include <map>
 #include <limits>
 
 using namespace std;
 
-bool hasTagAccents(const string&);
-bool hasClosingTag(const string&);
-bool hasOpeningTag(const string&);
-bool hasSpace(const string&);
-bool hasAttributeName(const string&);
-bool hasAttributeValue(const string&);
-bool hasAttributes(const string&);
+void enterHTMLLines(const int&, vector<string>&);
 
-string obtainTagName(const string&);
+void updateTag(const vector<string>&, string&);
 
-
+void removeBrackets(string&);
+void inputTilda(string&);
+void inputKeysAndValues(const vector<string>&, map<string, string>&);
+void displayValues(const vector<string>&, const map<string, string>&);
 
 int main() {
 
     int lines, queries;
-    string line;
-    vector<string> code;
+    vector<string> lines_v;
+    vector<string> queries_v;
+    map<string, string> m;
+    string query;
 
     cin >> lines >> queries;
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-    for (int i = 0; i < lines; i++) {
-        getline(cin, line);
-        code.push_back(line);
+    enterHTMLLines(lines, lines_v);
+
+    inputKeysAndValues(lines_v, m);
+
+    for (int i = 0; i < queries; i++) {
+        getline(cin, query);
+        queries_v.push_back(query);
     }
+
+    displayValues(queries_v, m);
 
     return 0;
 }
 
-bool hasTagAccents(const string& STR) {
+void enterHTMLLines(const int& LINES, vector<string>& v) {
 
-    int size = STR.length();
+    string s;
+    int counter = 0;
 
-    if (STR[0] == '<' && STR[size - 1] == '>') {
-        return true;
-    }
-    else {
-        return false;
-    }
+    while (counter < LINES) {
+        getline(cin, s);
 
-}
+        //Remove angle brackets
+        removeBrackets(s);
 
-bool hasClosingTag(const string& STR) {
-
-    if (STR[1] == '/') {
-        return true;
-    }
-    else {
-        return false;
-    }
-
-}
-
-bool hasOpeningTag(const string& STR) {
-
-    if (!hasClosingTag(STR) && isalnum(STR[1]) && hasSpace(STR)) {
-        return true;
-    }
-    else {
-        return false;
-    }
-
-}
-
-bool hasSpaces(const string& STR) {
-
-    int space_counter = 0;
-
-    for (int i = 0; i < STR.length(); i++) {
-        if (STR[i] == ' ') {
-            space_counter++;
-        }
-    }
-
-    if (space_counter >= 1) {
-        return true;
-    }
-    else {
-        return false;
-    }
-
-}
-
-bool hasAttributeName(const string& STR) {
-
-    if (hasOpeningTag(STR)) {
-
-        int index = 1;
-        int equals_counter = 0,
-
-            //Find first space character
-            while (STR[index] != ' ') {
-                index++;
-            }
-
-        //Find first alphanumeric character after the first space
-        while (!isalnum(STR[index])) {
-            index++;
+        //Delete empty characters at the end of string
+        while (s.back() == ' ') {
+            s.pop_back();
         }
 
-        //Find equals character
-        while (STR[index] != '=' || index < STR.length()) {
-            if (STR[index] == '=') {
-                equals_counter++;
-            }
+        v.push_back(s);
+        counter++;
+
+    }
+
+}
+
+void updateTag(const string& LINE, string& active_tag) {
+
+    string temp = "";
+    int counter = 0;
+    size_t start_index, end_index;
+
+    if (LINE[0] != '/') {
+
+        if (active_tag.length() >= 1) {
+            active_tag += ".";
         }
 
-        if (equals_counter > 0) {
-            return true;
+        while ((LINE[counter] != ' ' && LINE[counter] != '>') && counter < LINE.size()) {
+            temp = LINE[counter];
+            active_tag += temp;
+            counter++;
+        }
+
+    }
+
+    else {
+
+        start_index = active_tag.find_last_of(".");
+
+        if (start_index != string::npos) {
+
+           end_index = active_tag.size();
+
+           while (start_index < end_index) {
+               active_tag.pop_back();
+               start_index++;
+           }
+
         }
         else {
-            return false;
+            active_tag.clear();
         }
 
     }
 
-    bool hasAttributeValue(const string & STR) {
+ }
 
-        int quotation_counter = 0;
-        int index = 1;
+void removeBrackets(string& s) {
 
-        //Find first quotation mark character
-        while (STR[index] != '\"' || index < STR.length()) {
-            if (STR[index] == '\"') {
-                quotation_counter++;
-            }
-        }
+    s.erase(s.begin());
+    s.erase(s.end() - 1);
 
-        if (quotation_counter >= 2) {
-            return true;
-        }
-        else {
-            return false;
-        }
+}
 
-    }
+void insertTilda(string& s) {
 
-    bool hasAttributes(const string & STR) {
+    size_t index;
 
-        if (hasOpeningTag(STR)) {
+    index = s.find(" ");
+    s.replace(index, 1, "~");
 
-            int index = 1;
-            int equals_counter = 0;
+}
 
-            //Find first space character
-            while (STR[index] != ' ') {
-                index++;
-            }
+void inputKeysAndValues(const vector<string>& V, map<string, string>& m) {
 
-            //Find first alphanumeric character after the first space
-            while (!isalnum(STR[index])) {
-                index++;
-            }
+    size_t start_index = 0, end_index, index;
+    string active_tag = "";
+    string attribute_name;
+    string attribute_value;
+    string key;
 
-            while (equals_counter == 0 && quotation_counter <= 1 && index < STR.length()) {
+    for (size_t i = 0; i < V.size(); i++) {
 
-                if (STR[index] == '=') {
-                    equals_counter++;
+        key = "";
+
+        //Form correct tag section
+        updateTag(V[i], active_tag);
+
+        if (active_tag.size() > 0) {        
+
+            //Try to find " " for first attribute
+            start_index = V[i].find(" ");
+
+            while (start_index != string::npos) {
+
+                key = active_tag;
+
+                //Insert tilda symbol in correct position
+                key += "~";
+
+                //Move to first character of attribute name            
+                start_index++;
+
+                //Find index for the end of the attribute name
+                end_index = V[i].find(" ", start_index);
+
+                attribute_name = "";
+
+                //Build attribute name
+                while (V[i][start_index] != '=' && V[i][start_index] != ' ') {
+                    attribute_name += V[i][start_index];
+                    start_index++;
                 }
 
-                if (STR[index] == '\"') {
-                    quotation_counter++;
+                //Append attribute name to query key
+                key += attribute_name;
+
+                //Find opening '"' quotation mark of attribute value
+                start_index = V[i].find("\"", start_index);
+
+                //Move starting index to first character
+                start_index++;
+
+                //Find closing quotation mark of attribute value
+                end_index = V[i].find("\"", start_index);
+
+                //Clear attribute value string
+                attribute_value = "";
+
+                while (start_index < end_index) {
+                    attribute_value += V[i][start_index];
+                    start_index++;
                 }
 
-                index++;
+                m.insert(pair<string, string>(key, attribute_value));
+
+                //Attempt to find next attribute
+                start_index = V[i].find(" ", end_index);
+
             }
 
-            if (equals_counter >= 1 && quotation_counter >= 2) {
-                return true;
-            }
-
-        }
-        else {
-            return false;
         }
 
     }
 
-    string obtainTagName(const string & STR) {
+}
 
-        int index;
-        string tagName = "";
+void displayValues(const vector<string>& QUERIES, const map<string, string>& MAP) {
 
-        if (!hasClosingTag(STR)) {
-            index = 1;
+    for (int i = 0; i < QUERIES.size(); i++) {
+
+        if (MAP.count(QUERIES[i]) > 0) {
+            cout << MAP.at(QUERIES[i]) << "\n";
         }
         else {
-            index = 2;
+            cout << "Not Found!\n";
         }
-
-        while (STR[index] != ' ') {
-            tagName += STR[index];
-        }
-
-        return tagName;
 
     }
+
+}
